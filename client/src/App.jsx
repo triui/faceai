@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+axios.defaults.baseURL = '';
 
 function App() {
   const [parent1, setParent1] = useState(null);

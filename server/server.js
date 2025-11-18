@@ -3,9 +3,9 @@ console.log("2 — DIRNAME:", __dirname);
 console.log("3 — BEFORE CONFIG:", process.env.REPLICATE_API_TOKEN);
 
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "../.env") });
+require("dotenv").config({ path: require('path').join(__dirname, ".env") });
 
-console.log("4 — AFTER CONFIG:", process.env.REPLICATE_API_TOKEN);
+console.log("4 — AFTER CONFIG: Token Loaded", process.env.REPLICATE_API_TOKEN ? 'YES' : 'NO');
 console.log("ENV TEST:", process.env.REPLICATE_API_TOKEN);
 
 // --------------------
