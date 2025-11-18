@@ -1,91 +1,68 @@
-console.log("1 — CWD:", process.cwd());
-console.log("2 — DIRNAME:", __dirname);
-console.log("3 — BEFORE CONFIG:", process.env.REPLICATE_API_TOKEN);
-
-const path = require("path");
-require("dotenv").config({ path: require('path').join(__dirname, ".env") });
-
-console.log("4 — AFTER CONFIG: Token Loaded", process.env.REPLICATE_API_TOKEN ? 'YES' : 'NO');
-console.log("ENV TEST:", process.env.REPLICATE_API_TOKEN);
-
-// --------------------
-// IMPORTS (CommonJS)
-// --------------------
-const express = require("express");
-const cors = require("cors");
-const multer = require("multer");
-const fetch = require("node-fetch");
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const fetch = require('node-fetch');
+const { v2: cloudinary } = require('cloudinary');
 
 const app = express();
-
-// --------------------
-// MIDDLEWARE
-// --------------------
 app.use(cors());
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-const upload = multer({ dest: "uploads/" });
+// Configure Cloudinary
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_URL.split('@')[1].split('/')[0],
+  api_key: process.env.CLOUDINARY_URL.split('//')[1].split(':')[0],
+  api_secret: process.env.CLOUDINARY_URL.split(':')[1].split('@')[0]
+});
 
-// --------------------
-// BABY GENERATION ENDPOINT
-// --------------------
-app.post(
-  "/api/generate-baby",
-  upload.fields([{ name: "parent1" }, { name: "parent2" }]),
-  async (req, res) => {
-    try {
-      const host = req.headers.host;
-      const parent1Url = `https://${host}/uploads/${req.files.parent1[0].filename}`;
-      const parent2Url = `https://${host}/uploads/${req.files.parent2[0].filename}`;
+const upload = multer({ dest: 'uploads/' });
 
-      console.log("ENV TEST 2:", process.env.REPLICATE_API_TOKEN);
-
-      const replicateRes = await fetch("https://api.replicate.com/v1/predictions", {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          version: "9ed22e1d6dbb19c9e4a2d4e8d1c6e82e0699d6c1f94d9c20b3c5a2d4d0b9e8f7",
-          input: {
-            image_a: parent1Url,
-            image_b: parent2Url,
-            gender: req.body.gender || "random",
-          },
-        }),
-      });
-
-      const data = await replicateRes.json();
-      if (data.error) throw new Error(data.error);
-
-      res.json({ predictionId: data.id });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: err.message });
-    }
-  }
-);
-
-// --------------------
-// STATUS ENDPOINT
-// --------------------
-console.log("ENV TEST 3:", process.env.REPLICATE_API_TOKEN);
-
-app.get("/api/status/:id", async (req, res) => {
+app.post('/api/generate-baby', upload.fields([{ name: 'parent1' }, { name: 'parent2' }]), async (req, res) => {
   try {
-    console.log("ENV TEST 4:", process.env.REPLICATE_API_TOKEN);
+    // Upload both images to Cloudinary
+    const uploadImage = async (file) => {
+      const result = await cloudinary.uploader.upload(file.path, { folder: 'faceai' });
+      return result.secure_url;
+    };
 
-    const response = await fetch(
-      `https://api.replicate.com/v1/predictions/${req.params.id}`,
-      {
-        headers: {
-          Authorization: `Token ${process.env.REPLICATE_API_TOKEN}`,
-        },
-      }
-    );
+    const parent1Url = await uploadImage(req.files.parent1[0]);
+    const parent2Url = await uploadImage(req.files.parent2[0]);
 
+    console.log('Images uploaded:', parent1Url, parent2Url);
+
+    const replicateRes = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${process.env.REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: "9ed22e1d6dbb19c9e4a2d4e8d1c6e82e0699d6c1f94d9c20b3c5a2d4d0b9e8f7",
+        input: {
+          image_a: parent1Url,
+          image_b: parent2Url,
+          gender: req.body.gender || "random"
+        }
+      })
+    });
+
+    const data = await replicateRes.json();
+    if (data.error) throw new Error(data.error.detail || data.error);
+    
+    res.json({ predictionId: data.id });
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Poll endpoint stays the same
+app.get('/api/status/:id', async (req, res) => {
+  try {
+    const response = await fetch(`https://api.replicate.com/v1/predictions/${req.params.id}`, {
+      headers: { Authorization: `Token ${process.env.REPLICATE_API_TOKEN}` }
+    });
     const data = await response.json();
     res.json(data);
   } catch (err) {
@@ -93,8 +70,5 @@ app.get("/api/status/:id", async (req, res) => {
   }
 });
 
-// --------------------
-// SERVER START
-// --------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server ready on port ${PORT}`));
