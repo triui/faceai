@@ -24,31 +24,18 @@ function App() {
 
     try {
       const res = await axios.post('/api/generate-baby', formData);
-      pollResult(res.data.predictionId);
+      console.log('Backend response:', res.data);  // Debug in browser console (F12)
+      if (res.data.result) {
+        setResult(res.data.result);  // Direct baby URL
+      } else {
+        setError('Unexpected response from backend');
+      }
     } catch (err) {
-      setError('Upload failed');
+      console.error('Frontend error:', err.response?.data || err);
+      setError(err.response?.data?.error || 'Generation failed - check backend console');
+    } finally {
       setLoading(false);
     }
-  };
-
-  const pollResult = async (id) => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await axios.get(`/api/status/${id}`);
-        if (res.data.status === 'succeeded') {
-          clearInterval(interval);
-          setResult(res.data.output[0]);
-          setLoading(false);
-        } else if (res.data.status === 'failed') {
-          clearInterval(interval);
-          setError('Try different photos');
-          setLoading(false);
-        }
-      } catch (err) {
-        clearInterval(interval);
-        setLoading(false);
-      }
-    }, 3000);
   };
 
   return (
