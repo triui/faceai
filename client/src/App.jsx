@@ -10,7 +10,7 @@ function App() {
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
-    if (!parent1 || !parent2) return alert("Please upload both parents!");
+    if (!parent1 || !parent2) return alert("Upload both parents!");
 
     setLoading(true);
     setResult(null);
@@ -40,66 +40,62 @@ function App() {
           setLoading(false);
         } else if (res.data.status === 'failed') {
           clearInterval(interval);
-          setError('AI failed — try different photos');
+          setError('Try different photos');
           setLoading(false);
         }
       } catch (err) {
         clearInterval(interval);
         setLoading(false);
       }
-    }, 2500);
+    }, 3000);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 p-6">
-      <div className="max-w-5xl mx-auto text-center">
-        <h1 className="text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-blue-600">
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-50 to-blue-100 p-4">
+      <div className="max-w-6xl mx-auto text-center">
+        <h1 className="text-6xl font-bold mt-10 mb-4 bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-purple-600">
           FaceAI
         </h1>
-        <p className="text-2xl mb-12">Upload two parents → See your future baby in seconds</p>
+        <p className="text-2xl mb-12 text-gray-700">See your future baby in seconds 👶</p>
 
-        {!result ? (
-          <>
-            <div className="grid md:grid-cols-2 gap-10 max-w-3xl mx-auto mb-10">
-              <div>
-                <p className="text-xl font-semibold mb-4">Parent 1</p>
-                <input type="file" accept="image/*" onChange={e => setParent1(e.target.files[0])}
-                       className="block w-full text-sm text-gray-900 border rounded-lg cursor-pointer" />
-                {parent1 && <img src={URL.createObjectURL(parent1)} className="mt-4 rounded-xl shadow-2xl mx-auto max-w-xs" />}
-              </div>
-              <div>
-                <p className="text-xl font-semibold mb-4">Parent 2</p>
-                <input type="file" accept="image/*" onChange={e => setParent2(e.target.files[0])}
-                       className="block w-full text-sm text-gray-900 border rounded-lg cursor-pointer" />
-                {parent2 && <img src={URL.createObjectURL(parent2)} className="mt-4 rounded-xl shadow-2xl mx-auto max-w-xs" />}
-              </div>
+        {!result && (
+          <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+            <div>
+              <p className="text-xl font-bold mb-4">Parent 1</p>
+              <input type="file" accept="image/*" onChange={e => setParent1(e.target.files[0])} className="block w-full" />
+              {parent1 && <img src={URL.createObjectURL(parent1)} className="mt-6 rounded-2xl shadow-2xl max-w-sm mx-auto" alt="Parent 1" />}
             </div>
-
-            <div className="mb-8">
-              <select value={gender} onChange={e => setGender(e.target.value)}
-                      className="px-8 py-4 rounded-lg text-lg mr-6 border">
-                <option value="random">Random Gender</option>
-                <option value="male">Boy</option>
-                <option value="female">Girl</option>
-              </select>
-
-              <button onClick={handleGenerate} disabled={loading}
-                      className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-16 py-5 rounded-xl text-xl font-bold hover:scale-105 transition disabled:opacity-50">
-                {loading ? 'Creating your baby... (20–40s)' : 'Generate Baby 👶'}
-              </button>
+            <div>
+              <p className="text-xl font-bold mb-4">Parent 2</p>
+              <input type="file" accept="image/*" onChange={e => setParent2(e.target.files[0])} className="block w-full" />
+              {parent2 && <img src={URL.createObjectURL(parent2)} className="mt-6 rounded-2xl shadow-2xl max-w-sm mx-auto" alt="Parent 2" />}
             </div>
-          </>
-        ) : null}
+          </div>
+        )}
 
-        {loading && <p className="text-3xl animate-pulse mt-20">AI is imagining your future child...</p>}
-        {error && <p className="text-red-600 text-xl">{error}</p>}
+        {!result && (
+          <div className="mt-12">
+            <select value={gender} onChange={e => setGender(e.target.value)} className="px-8 py-4 rounded-xl text-lg mr-6 border-2">
+              <option value="random">Random</option>
+              <option value="male">Boy</option>
+              <option value="female">Girl</option>
+            </select>
+            <button onClick={handleGenerate} disabled={loading}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-16 py-5 rounded-xl text-2xl font-bold hover:scale-105 transition disabled:opacity-50">
+              {loading ? 'Creating magic... (20–40s)' : 'Generate Baby'}
+            </button>
+          </div>
+        )}
+
+        {loading && <p className="text-4xl mt-20 animate-pulse">AI is imagining your child...</p>}
+        {error && <p className="text-red-600 text-xl mt-10">{error}</p>}
 
         {result && (
-          <div className="mt-16">
+          <div className="mt-20">
             <h2 className="text-5xl font-bold mb-10">Your Future Baby 👶</h2>
             <img src={result} alt="Future baby" className="rounded-3xl shadow-2xl mx-auto max-w-2xl border-8 border-white" />
-            <button onClick={() => { setResult(null); setParent1(null); setParent2(null); }}
-                    className="mt-10 bg-gray-800 text-white px-12 py-5 rounded-xl text-xl hover:bg-gray-900">
+            <button onClick={() => { setResult(null); setParent1(null); setParent2(null); setGender('random'); }}
+              className="mt-12 bg-gray-800 text-white px-12 py-5 rounded-xl text-xl hover:bg-gray-900">
               Try Again
             </button>
           </div>
